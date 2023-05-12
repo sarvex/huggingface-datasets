@@ -77,9 +77,7 @@ def normalize_answer(s):
 
 
 def get_tokens(s):
-    if not s:
-        return []
-    return normalize_answer(s).split()
+    return [] if not s else normalize_answer(s).split()
 
 
 def compute_exact(a_gold, a_pred):
@@ -98,8 +96,7 @@ def compute_f1(a_gold, a_pred):
         return 0
     precision = 1.0 * num_same / len(pred_toks)
     recall = 1.0 * num_same / len(gold_toks)
-    f1 = (2 * precision * recall) / (precision + recall)
-    return f1
+    return (2 * precision * recall) / (precision + recall)
 
 
 def get_raw_scores(dataset, preds):
@@ -127,10 +124,7 @@ def apply_no_ans_threshold(scores, na_probs, qid_to_has_ans, na_prob_thresh):
     new_scores = {}
     for qid, s in scores.items():
         pred_na = na_probs[qid] > na_prob_thresh
-        if pred_na:
-            new_scores[qid] = float(not qid_to_has_ans[qid])
-        else:
-            new_scores[qid] = s
+        new_scores[qid] = float(not qid_to_has_ans[qid]) if pred_na else s
     return new_scores
 
 
@@ -256,10 +250,7 @@ def find_best_thresh(preds, scores, na_probs, qid_to_has_ans):
         if qid_to_has_ans[qid]:
             diff = scores[qid]
         else:
-            if preds[qid]:
-                diff = -1
-            else:
-                diff = 0
+            diff = -1 if preds[qid] else 0
         cur_score += diff
         if cur_score > best_score:
             best_score = cur_score

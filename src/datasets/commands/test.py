@@ -163,7 +163,7 @@ class TestCommand(BaseDatasetsCLICommand):
             # upload them on S3 at the same time afterwards.
             if self._save_infos:
                 dataset_readme_path = os.path.join(builder_cls.get_imported_module_dir(), "README.md")
-                name = Path(path).name + ".py"
+                name = f"{Path(path).name}.py"
                 combined_path = os.path.join(path, name)
                 if os.path.isfile(path):
                     dataset_dir = os.path.dirname(path)

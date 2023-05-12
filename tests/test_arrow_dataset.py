@@ -1159,7 +1159,7 @@ class BaseDatasetTest(TestCase):
                     assert_arrow_metadata_are_synced_with_dataset_features(dset_test)
                     file_names = sorted(Path(cache_file["filename"]).name for cache_file in dset_test.cache_files)
                     for i, file_name in enumerate(file_names):
-                        self.assertIn(new_fingerprint + f"_{i:05d}", file_name)
+                        self.assertIn(f"{new_fingerprint}_{i:05d}", file_name)
 
         with tempfile.TemporaryDirectory() as tmp_dir:  # lambda (requires multiprocess from pathos)
             with self._create_dummy_dataset(in_memory, tmp_dir) as dset:
@@ -1518,6 +1518,9 @@ class BaseDatasetTest(TestCase):
         # be sure that the state of the map callable is unaffected
         # before processing the dataset examples
 
+
+
+
         class ExampleCounter:
             def __init__(self, batched=False):
                 self.batched = batched
@@ -1525,10 +1528,8 @@ class BaseDatasetTest(TestCase):
                 self.cnt = 0
 
             def __call__(self, example):
-                if self.batched:
-                    self.cnt += len(example)
-                else:
-                    self.cnt += 1
+                self.cnt += len(example) if self.batched else 1
+
 
         with tempfile.TemporaryDirectory() as tmp_dir:
             with self._create_dummy_dataset(in_memory, tmp_dir) as dset:
@@ -2752,13 +2753,9 @@ class BaseDatasetTest(TestCase):
                 continue  # Skip multiprocessing tests for Python < 3.8
             with Dataset.from_dict(data) as dset:
                 tf_dataset = dset.to_tf_dataset(batch_size=10, shuffle=True, num_workers=num_workers)
-                indices = []
-                for batch in tf_dataset:
-                    indices.append(batch["col_1"])
+                indices = [batch["col_1"] for batch in tf_dataset]
                 indices = np.concatenate([arr.numpy() for arr in indices])
-                second_indices = []
-                for batch in tf_dataset:
-                    second_indices.append(batch["col_1"])
+                second_indices = [batch["col_1"] for batch in tf_dataset]
                 second_indices = np.concatenate([arr.numpy() for arr in second_indices])
                 self.assertFalse(np.array_equal(indices, second_indices))
 
@@ -3578,14 +3575,12 @@ def test_dataset_from_text_path_type(path_type, text_path, tmp_path):
 @pytest.fixture
 def data_generator():
     def _gen():
-        data = [
+        yield from [
             {"col_1": "0", "col_2": 0, "col_3": 0.0},
             {"col_1": "1", "col_2": 1, "col_3": 1.0},
             {"col_1": "2", "col_2": 2, "col_3": 2.0},
             {"col_1": "3", "col_2": 3, "col_3": 3.0},
         ]
-        for item in data:
-            yield item
 
     return _gen
 
@@ -3758,7 +3753,7 @@ def test_dummy_dataset_serialize_fs(dataset, mockfs):
     dataset_path = "mock://my_dataset"
     dataset.save_to_disk(dataset_path, storage_options=mockfs.storage_options)
     assert mockfs.isdir(dataset_path)
-    assert mockfs.glob(dataset_path + "/*")
+    assert mockfs.glob(f"{dataset_path}/*")
     reloaded = dataset.load_from_disk(dataset_path, storage_options=mockfs.storage_options)
     assert len(reloaded) == len(dataset)
     assert reloaded.features == dataset.features

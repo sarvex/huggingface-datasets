@@ -103,17 +103,17 @@ class RunBeamCommand(BaseDatasetsCLICommand):
         else:
             beam_options = None
         if self._all_configs and len(builder_cls.BUILDER_CONFIGS) > 0:
-            for builder_config in builder_cls.BUILDER_CONFIGS:
-                builders.append(
-                    builder_cls(
-                        config_name=builder_config.name,
-                        data_dir=self._data_dir,
-                        hash=dataset_module.hash,
-                        beam_options=beam_options,
-                        cache_dir=self._cache_dir,
-                        base_path=dataset_module.builder_kwargs.get("base_path"),
-                    )
+            builders.extend(
+                builder_cls(
+                    config_name=builder_config.name,
+                    data_dir=self._data_dir,
+                    hash=dataset_module.hash,
+                    beam_options=beam_options,
+                    cache_dir=self._cache_dir,
+                    base_path=dataset_module.builder_kwargs.get("base_path"),
                 )
+                for builder_config in builder_cls.BUILDER_CONFIGS
+            )
         else:
             builders.append(
                 builder_cls(
@@ -148,7 +148,7 @@ class RunBeamCommand(BaseDatasetsCLICommand):
         if self._save_infos:
             dataset_infos_path = os.path.join(builder_cls.get_imported_module_dir(), config.DATASETDICT_INFOS_FILENAME)
 
-            name = Path(path).name + ".py"
+            name = f"{Path(path).name}.py"
 
             combined_path = os.path.join(path, name)
             if os.path.isfile(path):
